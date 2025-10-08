@@ -1,261 +1,164 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="One-Stop Thematic News Dashboard – unified tech and policy news from TechCrunch, MIT, WEF, UNDP, and more." />
-  <link rel="icon" href="https://upload.wikimedia.org/wikipedia/commons/3/38/News_icon.svg" />
-  <title>One-Stop Thematic News Dashboard</title>
-
-  <style>
-    :root {
-      --bg: #0b0f14;
-      --panel: #111827;
-      --text: #e5e7eb;
-      --muted: #9ca3af;
-      --accent: #60a5fa;
-      --chip: #1f2937;
-      --card: #0f172a;
-      --link: #93c5fd;
-    }
-    * { box-sizing: border-box; }
-    html, body { height: 100%; }
-    body {
-      margin: 0;
-      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial;
-      background: linear-gradient(180deg, #071018, #0b0f14);
-      color: var(--text);
-    }
-    header {
-      position: sticky; top: 0; z-index: 50;
-      backdrop-filter: blur(8px);
-      background: rgba(11,15,20,0.8);
-      border-bottom: 1px solid #1f2937;
-    }
-    .wrap { max-width: 1200px; margin: 0 auto; padding: 18px; }
-    h1 { margin: 0; font-size: 22px; font-weight: 700; letter-spacing: .2px; }
-    .controls { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-top: 10px; }
-    .btn {
-      background: var(--panel);
-      color: var(--text);
-      border: 1px solid #334155;
-      padding: 8px 12px;
-      border-radius: 10px;
-      cursor: pointer;
-      font-weight: 600;
-      transition: .15s;
-    }
-    .btn:hover { transform: translateY(-1px); border-color: #475569; }
-    .input {
-      background: var(--panel);
-      color: var(--text);
-      border: 1px solid #334155;
-      padding: 8px 12px;
-      border-radius: 10px;
-    }
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-      gap: 16px;
-      padding: 18px;
-      max-width: 1200px;
-      margin: 0 auto;
-    }
-    .card {
-      background: linear-gradient(180deg, #0d1320, #0b1220);
-      border: 1px solid #1f2a3a;
-      border-radius: 16px;
-      overflow: hidden;
-      box-shadow: 0 10px 20px rgba(0,0,0,.35);
-    }
-    .card header { padding: 14px 14px 0 14px; background: transparent; border: 0; }
-    .sourceTitle { display: flex; align-items: center; gap: 10px; font-size: 15px; font-weight: 700; }
-    .chip {
-      background: var(--chip);
-      color: var(--muted);
-      padding: 2px 8px;
-      border-radius: 999px;
-      font-size: 12px;
-      border: 1px solid #334155;
-    }
-    ul.list { list-style: none; margin: 8px 0 0 0; padding: 0; }
-    .item { border-top: 1px solid #1f2a3a; padding: 12px 14px; }
-    .item:first-child { border-top: 0; }
-    .item a { color: var(--link); text-decoration: none; font-weight: 650; }
-    .item a:hover { text-decoration: underline; }
-    .meta { display: flex; gap: 8px; align-items: baseline; margin-top: 6px; color: var(--muted); font-size: 12px; }
-    .time { opacity: .85; }
-    .desc { margin-top: 6px; color: var(--muted); font-size: 13px; }
-    .error { color: #fca5a5; font-size: 13px; margin: 8px 14px 14px; }
-    footer { text-align: center; color: var(--muted); padding: 24px; font-size: 13px; }
-  </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>One-Stop Thematic News Dashboard</title>
+<link rel="icon" href="https://upload.wikimedia.org/wikipedia/commons/3/38/News_icon.svg" />
+<style>
+  :root {
+    --bg: #0b0f14;
+    --text: #e5e7eb;
+    --card-bg: #0d1320;
+    --border: #1f2a3a;
+    --accent: #93c5fd;
+    --desc: #9ca3af;
+    --error: #f87171;
+  }
+  [data-theme="light"] {
+    --bg: #f9fafb;
+    --text: #111827;
+    --card-bg: #ffffff;
+    --border: #e5e7eb;
+    --accent: #2563eb;
+    --desc: #4b5563;
+    --error: #dc2626;
+  }
+  body{margin:0;font-family:system-ui,Arial;background:var(--bg);color:var(--text);transition:background .3s,color .3s}
+  header{position:sticky;top:0;background:var(--card-bg);padding:1em;border-bottom:1px solid var(--border);display:flex;flex-direction:column;gap:.5em;z-index:1000}
+  h1{margin:0;font-size:1.4em}
+  .controls{display:flex;gap:.5em;flex-wrap:wrap;align-items:center}
+  button,select,input{background:var(--border);color:var(--text);border:1px solid var(--border);padding:.4em .6em;border-radius:6px;cursor:pointer}
+  button:hover,select:hover{background:var(--accent);color:#fff}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:1em;padding:1em}
+  .card{background:var(--card-bg);border:1px solid var(--border);border-radius:10px;box-shadow:0 4px 10px rgba(0,0,0,.1);transition:background .3s,border .3s}
+  .card h2{font-size:1em;padding:1em 1em .2em 1em;margin:0}
+  ul{list-style:none;margin:0;padding:0}
+  li{padding:1em;border-top:1px solid var(--border)}
+  li:first-child{border-top:0}
+  a{color:var(--accent);text-decoration:none;font-weight:600}
+  a:hover{text-decoration:underline}
+  .desc{color:var(--desc);font-size:.9em;margin-top:.4em}
+  .error{color:var(--error);padding:0 1em 1em 1em;font-size:.9em}
+  footer{text-align:center;color:var(--desc);padding:1em}
+  /* progress bar */
+  #progressBar{height:4px;width:0;background:var(--accent);transition:width .2s ease;position:absolute;top:0;left:0;}
+  #spinner{display:none;position:absolute;top:6px;right:12px;width:18px;height:18px;border:2px solid var(--accent);border-top-color:transparent;border-radius:50%;animation:spin 1s linear infinite;}
+  @keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+</style>
 </head>
 
 <body>
-  <header>
-    <div class="wrap">
-      <h1>One-Stop Thematic News Dashboard</h1>
-      <div class="controls">
-        <button id="refresh" class="btn">↻ Refresh</button>
-        <label>
-          <select id="interval" class="input">
-            <option value="0">Auto-refresh: Off</option>
-            <option value="5">Every 5 min</option>
-            <option value="15">Every 15 min</option>
-            <option value="30">Every 30 min</option>
-            <option value="60">Every 60 min</option>
-          </select>
-        </label>
-        <input id="search" class="input" placeholder="Filter headlines (e.g., AI, governance, climate)" />
-      </div>
-    </div>
-  </header>
+<header>
+  <div style="display:flex;justify-content:space-between;align-items:center;position:relative;">
+    <h1>One-Stop Thematic News Dashboard</h1>
+    <button id="themeToggle">🌙 Toggle Theme</button>
+    <div id="spinner"></div>
+    <div id="progressBar"></div>
+  </div>
+  <div class="controls">
+    <button id="refresh">↻ Refresh</button>
+    <input id="search" placeholder="Filter headlines (e.g., AI, governance)" />
+    <span id="timestamp" style="font-size:0.9em;color:var(--desc);margin-left:auto;"></span>
+  </div>
+</header>
 
-  <main class="grid" id="grid" aria-live="polite"></main>
+<main class="grid" id="grid"></main>
+<footer>Running locally via Node proxy – Auto-refresh every hour</footer>
 
-  <footer>
-    Hosted on GitHub Pages · Built for scanning Tech & Policy feeds
-  </footer>
+<script>
+const FEEDS = [
+  { name: "TechCrunch", url: "https://techcrunch.com/feed/" },
+  { name: "WIRED", url: "https://www.wired.com/feed/rss" },
+  { name: "Cointelegraph – Tech & Crypto", url: "https://cointelegraph.com/rss" },
+  { name: "ScienceDaily – Top Science News", url: "https://www.sciencedaily.com/rss/top/science.xml" },
+  { name: "VentureBeat – AI", url: "https://venturebeat.com/category/ai/feed/" },
+  { name: "Ars Technica", url: "https://feeds.arstechnica.com/arstechnica/index" },
+  { name: "MIT Technology Review", url: "https://www.technologyreview.com/feed/" }
+];
 
-  <script>
-    const SOURCES = [
-      { key: 'techcrunch', name: 'TechCrunch', api: 'https://techcrunch.com/wp-json/wp/v2/posts?per_page=8' },
-      { key: 'brookings', name: 'Brookings – Tech & Innovation', api: 'https://www.brookings.edu/wp-json/wp/v2/posts?per_page=8&categories=technology-innovation' },
-      { key: 'undp', name: 'UNDP – Digital (Blog)', api: 'https://www.undp.org/api/blog_posts?limit=8' },
-      { key: 'wef', name: 'World Economic Forum – Agenda', api: 'https://www.weforum.org/api/publications?locale=en&per_page=8' },
-      { key: 'mit', name: 'MIT Technology Review', api: 'https://www.technologyreview.com/wp-json/wp/v2/posts?per_page=8' },
-      { key: 'wired', name: 'WIRED', api: 'https://api.rss2json.com/v1/api.json?rss_url=https://www.wired.com/feed/rss' },
-      { key: 'ars', name: 'Ars Technica', api: 'https://api.rss2json.com/v1/api.json?rss_url=https://feeds.arstechnica.com/arstechnica/index' },
-      { key: 'reuters', name: 'Reuters – Technology', api: 'https://api.rss2json.com/v1/api.json?rss_url=https://feeds.reuters.com/reuters/technologyNews' }
-    ];
+const grid=document.getElementById("grid");
+const search=document.getElementById("search");
+const timestamp=document.getElementById("timestamp");
+const progressBar=document.getElementById("progressBar");
+const spinner=document.getElementById("spinner");
+const state={filter:""};
 
-    const grid = document.getElementById('grid');
-    const refreshBtn = document.getElementById('refresh');
-    const intervalSel = document.getElementById('interval');
-    const searchInput = document.getElementById('search');
-    const state = { items: {}, timer: null, filter: '' };
+function esc(s){return (s||"").replace(/[&<>\"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c]));}
+function strip(s){return s.replace(/<[^>]*>/g,"");}
 
-    refreshBtn.addEventListener('click', loadAll);
-    intervalSel.addEventListener('change', () => {
-      if (state.timer) clearInterval(state.timer);
-      const m = parseInt(intervalSel.value, 10);
-      if (m > 0) state.timer = setInterval(loadAll, m * 60000);
-    });
-    searchInput.addEventListener('input', () => {
-      state.filter = searchInput.value.trim().toLowerCase();
-      render();
-    });
+async function loadFeed(feed){
+  const url=`http://localhost:8080/feed?url=${encodeURIComponent(feed.url)}`;
+  const r=await fetch(url);
+  if(!r.ok)throw new Error(r.status);
+  const text=await r.text();
+  const xml=new DOMParser().parseFromString(text,"text/xml");
+  const items=Array.from(xml.querySelectorAll("item")).slice(0,6).map(i=>({
+    title:i.querySelector("title")?.textContent||"",
+    link:i.querySelector("link")?.textContent||"",
+    desc:i.querySelector("description")?.textContent||""
+  }));
+  return items;
+}
 
-    async function fetchJSON(url) {
-      const res = await fetch(url);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      return res.json();
+function card(feed,items){
+  const filtered=state.filter
+    ? items.filter(i=>(i.title+i.desc).toLowerCase().includes(state.filter))
+    : items;
+  return `
+  <section class="card">
+    <h2>${feed.name}</h2>
+    <ul>
+      ${filtered.map(i=>`<li><a href="${i.link}" target="_blank">${esc(i.title)}</a><div class="desc">${esc(strip(i.desc)).slice(0,140)}...</div></li>`).join("")}
+      ${!filtered.length?'<li class="desc">No matching headlines.</li>':""}
+    </ul>
+  </section>`;
+}
+
+async function refresh(){
+  spinner.style.display="block";
+  progressBar.style.width="0";
+  grid.innerHTML="Loading feeds …";
+  const cards=[];
+  let count=0;
+  for(const f of FEEDS){
+    try{
+      const data=await loadFeed(f);
+      cards.push(card(f,data));
+    }catch(e){
+      cards.push(`<section class="card"><h2>${f.name}</h2><div class="error">Could not load feed (${e.message})</div></section>`);
     }
+    count++;
+    progressBar.style.width=`${(count/FEEDS.length)*100}%`;
+    await new Promise(r=>setTimeout(r,300)); // gentle delay
+  }
+  grid.innerHTML=cards.join("");
+  const now=new Date();
+  timestamp.textContent="Last updated: "+now.toLocaleTimeString();
+  spinner.style.display="none";
+  progressBar.style.width="100%";
+  setTimeout(()=>progressBar.style.width="0",1000);
+}
 
-    async function loadOne(src) {
-      const card = document.getElementById(`card-${src.key}`);
-      const list = card.querySelector('ul.list');
-      const err = card.querySelector('.error');
-      list.innerHTML = '<li class="item">Loading…</li>';
-      err.textContent = '';
-      try {
-        const data = await fetchJSON(src.api);
-        const items = parseItems(src.key, data);
-        state.items[src.key] = items;
-        renderList(list, items);
-      } catch (e) {
-        list.innerHTML = '';
-        err.textContent = `Could not load feed (${e.message})`;
-      }
-    }
+// 🔁 Auto-refresh every hour
+setInterval(refresh, 3600000);
 
-    function parseItems(key, data) {
-      const out = [];
-      if (Array.isArray(data)) {
-        data.forEach(p => out.push({
-          title: p.title.rendered || p.title,
-          link: p.link,
-          pubDate: p.date,
-          desc: strip(p.excerpt?.rendered || p.content?.rendered || '')
-        }));
-      } else if (data.results) {
-        data.results.forEach(p => out.push({
-          title: p.title,
-          link: 'https://www.undp.org' + p.path,
-          pubDate: p.createdAt,
-          desc: p.excerpt
-        }));
-      } else if (data.items) {
-        data.items.forEach(p => out.push({
-          title: p.title,
-          link: p.link,
-          pubDate: p.pubDate,
-          desc: p.description
-        }));
-      } else if (data.data) {
-        data.data.forEach(p => out.push({
-          title: p.title,
-          link: 'https://www.weforum.org/agenda/' + p.slug,
-          pubDate: p.published,
-          desc: p.summary
-        }));
-      }
-      return out.slice(0, 8);
-    }
+// 🌓 Theme toggle
+const themeToggle=document.getElementById("themeToggle");
+const currentTheme=localStorage.getItem("theme")||"dark";
+document.documentElement.setAttribute("data-theme",currentTheme);
+themeToggle.textContent=currentTheme==="light"?"🌙 Dark":"☀️ Light";
 
-    function strip(s) { return s?.replace(/<[^>]*>?/gm, '').trim(); }
-    function iso(iso) {
-      try {
-        const d = new Date(iso);
-        const x = (Date.now() - d) / 1000;
-        if (x < 60) return 'just now';
-        if (x < 3600) return `${Math.floor(x / 60)}m ago`;
-        if (x < 86400) return `${Math.floor(x / 3600)}h ago`;
-        return `${Math.floor(x / 86400)}d ago`;
-      } catch { return ''; }
-    }
-    function esc(s) { return (s || '').replace(/[&<>\"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '\"': '&quot;', '\\'': '&#39;' }[c])); }
+themeToggle.onclick=()=>{
+  const newTheme=document.documentElement.getAttribute("data-theme")==="light"?"dark":"light";
+  document.documentElement.setAttribute("data-theme",newTheme);
+  localStorage.setItem("theme",newTheme);
+  themeToggle.textContent=newTheme==="light"?"🌙 Dark":"☀️ Light";
+};
 
-    function renderList(list, it) {
-      const f = state.filter;
-      const arr = f ? it.filter(a => (a.title || '').toLowerCase().includes(f) || (a.desc || '').toLowerCase().includes(f)) : it;
-      list.innerHTML = arr.map(a => `
-        <li class="item">
-          <a href="${a.link}" target="_blank">${esc(a.title)}</a>
-          <div class="meta">${a.pubDate ? esc(iso(a.pubDate)) : ''}</div>
-          ${a.desc ? `<div class="desc">${esc(a.desc.substring(0, 140))}...</div>` : ''}
-        </li>`).join('') || '<li class="item" style="color: var(--muted)">No matching headlines.</li>';
-    }
-
-    function render() {
-      for (const s of SOURCES) {
-        const l = document.querySelector(`#card-${s.key} ul.list`);
-        if (l && state.items[s.key]) renderList(l, state.items[s.key]);
-      }
-    }
-
-    function mount() {
-      grid.innerHTML = SOURCES.map(s => `
-        <section class="card" id="card-${s.key}">
-          <header><div class="sourceTitle">📰 ${s.name}<span class="chip">Feed</span></div></header>
-          <ul class="list"></ul>
-          <div class="error"></div>
-        </section>`).join('');
-    }
-
-    async function loadAll() {
-      refreshBtn.disabled = true;
-      refreshBtn.textContent = 'Refreshing…';
-      for (const s of SOURCES) {
-        await loadOne(s);
-        await new Promise(r => setTimeout(r, 700)); // small delay to avoid overload
-      }
-      refreshBtn.disabled = false;
-      refreshBtn.textContent = '↻ Refresh';
-    }
-
-    mount();
-    loadAll();
-  </script>
+document.getElementById("refresh").onclick=refresh;
+search.oninput=()=>{state.filter=search.value.toLowerCase();refresh();};
+refresh();
+</script>
 </body>
 </html>
