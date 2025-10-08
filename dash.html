@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>One‑Stop Thematic News Dashboard</title>
+  <style>
+    :root {
+      --bg: #0b0f14;
+      --panel: #111827;
+      --text: #e5e7eb;
+      --muted: #9ca3af;
+      --accent: #60a5fa;
+      --chip: #1f2937;
+      --card: #0f172a;
+      --link: #93c5fd;
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial;
+      background: linear-gradient(180deg, #071018, #0b0f14);
+      color: var(--text);
+    }
+    header {
+      position: sticky; top: 0; z-index: 50;
+      backdrop-filter: blur(8px);
+      background: rgba(11,15,20,0.8);
+      border-bottom: 1px solid #1f2937;
+    }
+    .wrap { max-width: 1200px; margin: 0 auto; padding: 18px; }
+    h1 { margin: 0; font-size: 22px; font-weight: 700; letter-spacing: .2px; }
+    .controls { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-top: 10px; }
+    .btn {
+      background: var(--panel); color: var(--text); border: 1px solid #334155; 
+      padding: 8px 12px; border-radius: 10px; cursor: pointer; font-weight: 600; transition: .15s;
+    }
+    .btn:hover { transform: translateY(-1px); border-color: #475569; }
+    .input { background: var(--panel); color: var(--text); border: 1px solid #334155; padding: 8px 12px; border-radius: 10px; }
+    .grid { display: grid; grid-template-columns: repeat( auto-fit, minmax(320px, 1fr) ); gap: 16px; padding: 18px; max-width: 1200px; margin: 0 auto; }
+    .card {
+      background: linear-gradient(180deg, #0d1320, #0b1220);
+      border: 1px solid #1f2a3a; border-radius: 16px; overflow: hidden;
+      box-shadow: 0 10px 20px rgba(0,0,0,.35);
+    }
+    .card header { padding: 14px 14px 0 14px; background: transparent; border: 0; position: initial; }
+    .sourceTitle { display: flex; align-items: center; gap: 10px; font-size: 15px; font-weight: 700; }
+    .chip { background: var(--chip); color: var(--muted); padding: 2px 8px; border-radius: 999px; font-size: 12px; border: 1px solid #334155; }
+    ul.list { list-style: none; margin: 8px 0 0 0; padding: 0; }
+    .item { border-top: 1px solid #1f2a3a; padding: 12px 14px; }
+    .item:first-child { border-top: 0; }
+    .item a { color: var(--link); text-decoration: none; font-weight: 650; }
+    .item a:hover { text-decoration: underline; }
+    .meta { display: flex; gap: 8px; align-items: baseline; margin-top: 6px; color: var(--muted); font-size: 12px; }
+    .time { opacity: .85; }
+    .desc { margin-top: 6px; color: var(--muted); font-size: 13px; }
+    .error { color: #fca5a5; font-size: 13px; margin: 8px 14px 14px; }
+    footer { text-align: center; color: var(--muted); padding: 24px; font-size: 13px; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap">
+      <h1>One‑Stop Thematic News Dashboard</h1>
+      <div class="controls">
+        <button id="refresh" class="btn">↻ Refresh</button>
+        <label>
+          <select id="interval" class="input">
+            <option value="0">Auto‑refresh: Off</option>
+            <option value="5">Every 5 min</option>
+            <option value="15">Every 15 min</option>
+            <option value="30">Every 30 min</option>
+            <option value="60">Every 60 min</option>
+          </select>
+        </label>
+        <input id="search" class="input" placeholder="Filter headlines (e.g., AI, governance, climate)" />
+      </div>
+    </div>
+  </header>
+
+  <main class="grid" id="grid" aria-live="polite"></main>
+
+  <footer>
+    Built for quick scanning across Tech & Policy sources. Uses JSON APIs for reliability.
+  </footer>
+
+  <script>
+    const SOURCES = [
+      { key: 'techcrunch', name: 'TechCrunch', api: 'https://techcrunch.com/wp-json/wp/v2/posts?per_page=10' },
+      { key: 'wired', name: 'WIRED', api: 'https://www.wired.com/feed/rss' }, // fallback RSS
+      { key: 'brookings', name: 'Brookings – Tech & Innovation', api: 'https://www.brookings.edu/wp-json/wp/v2/posts?per_page=10&categories=technology-innovation' },
+      { key: 'wef', name: 'World Economic Forum – Agenda', api: 'https://www.weforum.org/api/publications?locale=en' },
+      { key: 'undp', name: 'UNDP – Digital (Blog)', api: 'https://www.undp.org/api/blog_posts?limit=10' },
+      { key: 'ars', name: 'Ars Technica', api: 'https://feeds.arstechnica.com/arstechnica/index' },
+      { key: 'mit', name: 'MIT Technology Review', api: 'https://www.technologyreview.com/wp-json/wp/v2/posts?per_page=10' },
+      { key: 'reuters', name: 'Reuters – Technology', api: 'https://api.rss2json.com/v1/api.json?rss_url=https://feeds.reuters.com/reuters/technologyNews' }
+    ];
+
+    const ITEMS_PER_SOURCE = 8;
+    const grid = document.getElementById('grid');
+    const refreshBtn = document.getElementById('refresh');
+    const intervalSel = document.getElementById('interval');
+    const searchInput = document.getElementById('search');
+
+    const state = { items: {}, timer: null, filter: '' };
+
+    refreshBtn.addEventListener('click', loadAll);
+
+    intervalSel.addEventListener('change', () => {
+      if (state.timer) clearInterval(state.timer);
+      const minutes = parseInt(intervalSel.value, 10);
+      if (minutes > 0) state.timer = setInterval(loadAll, minutes * 60000);
+    });
+
+    searchInput.addEventListener('input', () => {
+      state.filter = searchInput.value.trim().toLowerCase();
+      render();
+    });
+
+    async function fetchJSON(url) {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return await res.json();
+    }
+
+    async function loadOne(source) {
+      const card = document.getElementById(`card-${source.key}`);
+      const list = card.querySelector('ul.list');
+      const err = card.querySelector('.error');
+      list.innerHTML = '<li class="item">Loading…</li>';
+      err.textContent = '';
+      try {
+        const data = await fetchJSON(source.api);
+        const items = parseItems(source.key, data).slice(0, ITEMS_PER_SOURCE);
+        state.items[source.key] = items;
+        renderList(list, items);
+      } catch (e) {
+        list.innerHTML = '';
+        err.textContent = `Could not load feed (${e.message})`;
+      }
+    }
+
+    function parseItems(key, data) {
+      const items = [];
+      if (key === 'techcrunch' || key === 'brookings' || key === 'mit') {
+        for (const p of data) items.push({
+          title: p.title.rendered || p.title || 'Untitled',
+          link: p.link || p.guid?.rendered || '#',
+          pubDate: p.date || '',
+          desc: stripHTML(p.excerpt?.rendered || p.content?.rendered || '')
+        });
+      } else if (key === 'undp') {
+        for (const p of data.results || data) items.push({
+          title: p.title || 'Untitled',
+          link: 'https://www.undp.org' + p.path,
+          pubDate: p.createdAt || '',
+          desc: p.excerpt || ''
+        });
+      } else if (key === 'wef') {
+        for (const p of data.items || data) items.push({
+          title: p.title || 'Untitled',
+          link: 'https://www.weforum.org/agenda/' + (p.slug || ''),
+          pubDate: p.published || '',
+          desc: p.summary || ''
+        });
+      } else if (key === 'reuters') {
+        for (const p of data.items || []) items.push({
+          title: p.title,
+          link: p.link,
+          pubDate: p.pubDate,
+          desc: p.description
+        });
+      } else {
+        // fallback RSS parser via rss2json
+        if (data.items) for (const p of data.items) items.push({ title: p.title, link: p.link, pubDate: p.pubDate, desc: p.description });
+      }
+      return items;
+    }
+
+    function stripHTML(str) { return str?.replace(/<[^>]*>?/gm, '').trim(); }
+
+    function isoToRelative(iso) {
+      try {
+        const d = new Date(iso);
+        const diff = (Date.now() - d.getTime()) / 1000;
+        if (diff < 60) return 'just now';
+        if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
+        if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
+        return Math.floor(diff / 86400) + 'd ago';
+      } catch { return ''; }
+    }
+
+    function renderList(listEl, items) {
+      const f = state.filter;
+      const filtered = f ? items.filter(it => (it.title || '').toLowerCase().includes(f) || (it.desc || '').toLowerCase().includes(f)) : items;
+      listEl.innerHTML = filtered.map(it => `
+        <li class="item">
+          <a href="${it.link}" target="_blank" rel="noopener noreferrer">${escapeHTML(it.title)}</a>
+          <div class="meta">${it.pubDate ? `<span>${escapeHTML(isoToRelative(it.pubDate))}</span>` : ''}</div>
+          ${it.desc ? `<div class="desc">${escapeHTML(it.desc.substring(0,140))}...</div>` : ''}
+        </li>
+      `).join('');
+      if (!filtered.length) listEl.innerHTML = '<li class="item" style="color: var(--muted)">No matching headlines.</li>';
+    }
+
+    function escapeHTML(str) { return (str || '').replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[s])); }
+
+    function mountCards() {
+      grid.innerHTML = SOURCES.map(src => `
+        <section class="card" id="card-${src.key}">
+          <header>
+            <div class="sourceTitle">📰 ${src.name}<span class="chip">JSON</span></div>
+          </header>
+          <ul class="list"></ul>
+          <div class="error"></div>
+        </section>
+      `).join('');
+    }
+
+    async function loadAll() {
+      refreshBtn.disabled = true; refreshBtn.textContent = 'Refreshing…';
+      await Promise.allSettled(SOURCES.map(loadOne));
+      refreshBtn.disabled = false; refreshBtn.textContent = '↻ Refresh';
+    }
+
+    mountCards();
+    loadAll();
+  </script>
+</body>
+</html>
