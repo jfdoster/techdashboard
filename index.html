@@ -3,12 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="One‑Stop Thematic News Dashboard – a unified feed for tech, innovation, and policy news from TechCrunch, MIT, WEF, UNDP, and more." />
-  <meta property="og:title" content="One‑Stop Thematic News Dashboard" />
-  <meta property="og:description" content="Stay current on technology, digital governance, and innovation policy." />
-  <meta property="og:type" content="website" />
-  <meta property="og:image" content="https://upload.wikimedia.org/wikipedia/commons/3/38/News_icon.svg" />
-  <title>One‑Stop Thematic News Dashboard</title>
+  <meta name="description" content="One-Stop Thematic News Dashboard – unified tech and policy news from TechCrunch, MIT, WEF, UNDP, and more." />
+  <link rel="icon" href="https://upload.wikimedia.org/wikipedia/commons/3/38/News_icon.svg" />
+  <title>One-Stop Thematic News Dashboard</title>
   <style>
     :root {
       --bg: #0b0f14;
@@ -66,12 +63,12 @@
 <body>
   <header>
     <div class="wrap">
-      <h1>One‑Stop Thematic News Dashboard</h1>
+      <h1>One-Stop Thematic News Dashboard</h1>
       <div class="controls">
         <button id="refresh" class="btn">↻ Refresh</button>
         <label>
           <select id="interval" class="input">
-            <option value="0">Auto‑refresh: Off</option>
+            <option value="0">Auto-refresh: Off</option>
             <option value="5">Every 5 min</option>
             <option value="15">Every 15 min</option>
             <option value="30">Every 30 min</option>
@@ -91,14 +88,14 @@
 
   <script>
     const SOURCES = [
-      { key: 'techcrunch', name: 'TechCrunch', api: 'https://techcrunch.com/wp-json/wp/v2/posts?per_page=10' },
-      { key: 'wired', name: 'WIRED', api: 'https://api.rss2json.com/v1/api.json?rss_url=https://www.wired.com/feed/rss' },
-      { key: 'brookings', name: 'Brookings – Tech & Innovation', api: 'https://api.rss2json.com/v1/api.json?rss_url=https://www.brookings.edu/topic/technology-innovation/feed/' },
-      { key: 'wef', name: 'World Economic Forum – Agenda', api: 'https://api.rss2json.com/v1/api.json?rss_url=https://www.weforum.org/agenda/feed/' },
-      { key: 'undp', name: 'UNDP – Digital (Blog)', api: 'https://api.rss2json.com/v1/api.json?rss_url=https://www.undp.org/blog/feed' },
-      { key: 'ars', name: 'Ars Technica', api: 'https://api.rss2json.com/v1/api.json?rss_url=https://feeds.arstechnica.com/arstechnica/index' },
-      { key: 'mit', name: 'MIT Technology Review', api: 'https://api.rss2json.com/v1/api.json?rss_url=https://www.technologyreview.com/feed/' },
-      { key: 'reuters', name: 'Reuters – Technology', api: 'https://api.rss2json.com/v1/api.json?rss_url=https://feeds.reuters.com/reuters/technologyNews' }
+      { key: 'techcrunch', name: 'TechCrunch', api: 'https://api.allorigins.win/get?url=' + encodeURIComponent('https://techcrunch.com/feed/') },
+      { key: 'wired', name: 'WIRED', api: 'https://api.allorigins.win/get?url=' + encodeURIComponent('https://www.wired.com/feed/rss') },
+      { key: 'brookings', name: 'Brookings – Tech & Innovation', api: 'https://api.allorigins.win/get?url=' + encodeURIComponent('https://www.brookings.edu/topic/technology-innovation/feed/') },
+      { key: 'wef', name: 'World Economic Forum – Agenda', api: 'https://api.allorigins.win/get?url=' + encodeURIComponent('https://www.weforum.org/agenda/feed/') },
+      { key: 'undp', name: 'UNDP – Digital (Blog)', api: 'https://api.allorigins.win/get?url=' + encodeURIComponent('https://www.undp.org/blog/feed') },
+      { key: 'ars', name: 'Ars Technica', api: 'https://api.allorigins.win/get?url=' + encodeURIComponent('https://feeds.arstechnica.com/arstechnica/index') },
+      { key: 'mit', name: 'MIT Technology Review', api: 'https://api.allorigins.win/get?url=' + encodeURIComponent('https://www.technologyreview.com/feed/') },
+      { key: 'reuters', name: 'Reuters – Technology', api: 'https://api.allorigins.win/get?url=' + encodeURIComponent('https://feeds.reuters.com/reuters/technologyNews') }
     ];
 
     const ITEMS_PER_SOURCE = 8;
@@ -122,11 +119,13 @@
       render();
     });
 
-    async function fetchJSON(url) {
-      const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(url)}`;
-      const res = await fetch(proxyUrl);
+    async function fetchFeed(url) {
+      const res = await fetch(url);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      return await res.json();
+      const data = await res.json();
+      const xmlText = data.contents || data;
+      const parser = new DOMParser();
+      return parser.parseFromString(xmlText, 'text/xml');
     }
 
     async function loadOne(source) {
@@ -136,8 +135,8 @@
       list.innerHTML = '<li class="item">Loading…</li>';
       err.textContent = '';
       try {
-        const data = await fetchJSON(source.api);
-        const items = parseItems(data).slice(0, ITEMS_PER_SOURCE);
+        const doc = await fetchFeed(source.api);
+        const items = parseRSS(doc).slice(0, ITEMS_PER_SOURCE);
         state.items[source.key] = items;
         renderList(list, items);
       } catch (e) {
@@ -146,15 +145,15 @@
       }
     }
 
-    function parseItems(data) {
-      const items = [];
-      for (const p of data.items || []) {
-        items.push({ title: p.title, link: p.link, pubDate: p.pubDate, desc: stripHTML(p.description || '') });
-      }
-      return items;
+    function parseRSS(doc) {
+      const entries = Array.from(doc.querySelectorAll('item, entry'));
+      return entries.map(el => ({
+        title: el.querySelector('title')?.textContent || 'Untitled',
+        link: el.querySelector('link')?.textContent || el.querySelector('link')?.getAttribute('href') || '#',
+        pubDate: el.querySelector('pubDate, updated, published')?.textContent || '',
+        desc: el.querySelector('description, summary, content')?.textContent || ''
+      }));
     }
-
-    function stripHTML(str) { return str?.replace(/<[^>]*>?/gm, '').trim(); }
 
     function isoToRelative(iso) {
       try {
@@ -167,6 +166,8 @@
       } catch { return ''; }
     }
 
+    function stripHTML(str) { return str?.replace(/<[^>]*>?/gm, '').trim(); }
+
     function renderList(listEl, items) {
       const f = state.filter;
       const filtered = f ? items.filter(it => (it.title || '').toLowerCase().includes(f) || (it.desc || '').toLowerCase().includes(f)) : items;
@@ -174,7 +175,7 @@
         <li class="item">
           <a href="${it.link}" target="_blank" rel="noopener noreferrer">${escapeHTML(it.title)}</a>
           <div class="meta">${it.pubDate ? `<span>${escapeHTML(isoToRelative(it.pubDate))}</span>` : ''}</div>
-          ${it.desc ? `<div class="desc">${escapeHTML(it.desc.substring(0,140))}...</div>` : ''}
+          ${it.desc ? `<div class="desc">${escapeHTML(stripHTML(it.desc).substring(0,140))}...</div>` : ''}
         </li>
       `).join('');
       if (!filtered.length) listEl.innerHTML = '<li class="item" style="color: var(--muted)">No matching headlines.</li>';
@@ -196,7 +197,10 @@
 
     async function loadAll() {
       refreshBtn.disabled = true; refreshBtn.textContent = 'Refreshing…';
-      await Promise.allSettled(SOURCES.map(loadOne));
+      for (const src of SOURCES) {
+        await loadOne(src);
+        await new Promise(r => setTimeout(r, 500)); // half-second delay to avoid rate-limits
+      }
       refreshBtn.disabled = false; refreshBtn.textContent = '↻ Refresh';
     }
 
