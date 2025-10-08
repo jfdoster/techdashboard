@@ -3,6 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="One‑Stop Thematic News Dashboard – a unified feed for tech, innovation, and policy news from TechCrunch, MIT, WEF, UNDP, and more." />
+  <meta property="og:title" content="One‑Stop Thematic News Dashboard" />
+  <meta property="og:description" content="Stay current on technology, digital governance, and innovation policy." />
+  <meta property="og:type" content="website" />
+  <meta property="og:image" content="https://upload.wikimedia.org/wikipedia/commons/3/38/News_icon.svg" />
   <title>One‑Stop Thematic News Dashboard</title>
   <style>
     :root {
@@ -37,7 +42,7 @@
     }
     .btn:hover { transform: translateY(-1px); border-color: #475569; }
     .input { background: var(--panel); color: var(--text); border: 1px solid #334155; padding: 8px 12px; border-radius: 10px; }
-    .grid { display: grid; grid-template-columns: repeat( auto-fit, minmax(320px, 1fr) ); gap: 16px; padding: 18px; max-width: 1200px; margin: 0 auto; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; padding: 18px; max-width: 1200px; margin: 0 auto; }
     .card {
       background: linear-gradient(180deg, #0d1320, #0b1220);
       border: 1px solid #1f2a3a; border-radius: 16px; overflow: hidden;
@@ -81,18 +86,18 @@
   <main class="grid" id="grid" aria-live="polite"></main>
 
   <footer>
-    Built for quick scanning across Tech & Policy sources. Uses JSON APIs for reliability.
+    Hosted on GitHub Pages · Built for scanning Tech & Policy feeds
   </footer>
 
   <script>
     const SOURCES = [
       { key: 'techcrunch', name: 'TechCrunch', api: 'https://techcrunch.com/wp-json/wp/v2/posts?per_page=10' },
-      { key: 'wired', name: 'WIRED', api: 'https://www.wired.com/feed/rss' }, // fallback RSS
-      { key: 'brookings', name: 'Brookings – Tech & Innovation', api: 'https://www.brookings.edu/wp-json/wp/v2/posts?per_page=10&categories=technology-innovation' },
-      { key: 'wef', name: 'World Economic Forum – Agenda', api: 'https://www.weforum.org/api/publications?locale=en' },
-      { key: 'undp', name: 'UNDP – Digital (Blog)', api: 'https://www.undp.org/api/blog_posts?limit=10' },
-      { key: 'ars', name: 'Ars Technica', api: 'https://feeds.arstechnica.com/arstechnica/index' },
-      { key: 'mit', name: 'MIT Technology Review', api: 'https://www.technologyreview.com/wp-json/wp/v2/posts?per_page=10' },
+      { key: 'wired', name: 'WIRED', api: 'https://api.rss2json.com/v1/api.json?rss_url=https://www.wired.com/feed/rss' },
+      { key: 'brookings', name: 'Brookings – Tech & Innovation', api: 'https://api.rss2json.com/v1/api.json?rss_url=https://www.brookings.edu/topic/technology-innovation/feed/' },
+      { key: 'wef', name: 'World Economic Forum – Agenda', api: 'https://api.rss2json.com/v1/api.json?rss_url=https://www.weforum.org/agenda/feed/' },
+      { key: 'undp', name: 'UNDP – Digital (Blog)', api: 'https://api.rss2json.com/v1/api.json?rss_url=https://www.undp.org/blog/feed' },
+      { key: 'ars', name: 'Ars Technica', api: 'https://api.rss2json.com/v1/api.json?rss_url=https://feeds.arstechnica.com/arstechnica/index' },
+      { key: 'mit', name: 'MIT Technology Review', api: 'https://api.rss2json.com/v1/api.json?rss_url=https://www.technologyreview.com/feed/' },
       { key: 'reuters', name: 'Reuters – Technology', api: 'https://api.rss2json.com/v1/api.json?rss_url=https://feeds.reuters.com/reuters/technologyNews' }
     ];
 
@@ -118,7 +123,8 @@
     });
 
     async function fetchJSON(url) {
-      const res = await fetch(url);
+      const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(url)}`;
+      const res = await fetch(proxyUrl);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       return await res.json();
     }
@@ -131,7 +137,7 @@
       err.textContent = '';
       try {
         const data = await fetchJSON(source.api);
-        const items = parseItems(source.key, data).slice(0, ITEMS_PER_SOURCE);
+        const items = parseItems(data).slice(0, ITEMS_PER_SOURCE);
         state.items[source.key] = items;
         renderList(list, items);
       } catch (e) {
@@ -140,39 +146,10 @@
       }
     }
 
-    function parseItems(key, data) {
+    function parseItems(data) {
       const items = [];
-      if (key === 'techcrunch' || key === 'brookings' || key === 'mit') {
-        for (const p of data) items.push({
-          title: p.title.rendered || p.title || 'Untitled',
-          link: p.link || p.guid?.rendered || '#',
-          pubDate: p.date || '',
-          desc: stripHTML(p.excerpt?.rendered || p.content?.rendered || '')
-        });
-      } else if (key === 'undp') {
-        for (const p of data.results || data) items.push({
-          title: p.title || 'Untitled',
-          link: 'https://www.undp.org' + p.path,
-          pubDate: p.createdAt || '',
-          desc: p.excerpt || ''
-        });
-      } else if (key === 'wef') {
-        for (const p of data.items || data) items.push({
-          title: p.title || 'Untitled',
-          link: 'https://www.weforum.org/agenda/' + (p.slug || ''),
-          pubDate: p.published || '',
-          desc: p.summary || ''
-        });
-      } else if (key === 'reuters') {
-        for (const p of data.items || []) items.push({
-          title: p.title,
-          link: p.link,
-          pubDate: p.pubDate,
-          desc: p.description
-        });
-      } else {
-        // fallback RSS parser via rss2json
-        if (data.items) for (const p of data.items) items.push({ title: p.title, link: p.link, pubDate: p.pubDate, desc: p.description });
+      for (const p of data.items || []) {
+        items.push({ title: p.title, link: p.link, pubDate: p.pubDate, desc: stripHTML(p.description || '') });
       }
       return items;
     }
@@ -209,7 +186,7 @@
       grid.innerHTML = SOURCES.map(src => `
         <section class="card" id="card-${src.key}">
           <header>
-            <div class="sourceTitle">📰 ${src.name}<span class="chip">JSON</span></div>
+            <div class="sourceTitle">📰 ${src.name}<span class="chip">Feed</span></div>
           </header>
           <ul class="list"></ul>
           <div class="error"></div>
